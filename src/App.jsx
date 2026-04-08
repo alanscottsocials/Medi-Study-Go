@@ -1,17 +1,17 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import Header from './components/layout/Header';
+import Hero from './components/common/Hero';
+import Reviews from './components/common/Reviews';
 
 function App() {
-  const [count, setCount] = useState(0)
-
   return (
-    <>
-    <h1>HI</h1>
-    </>
-  )
+    <div className="min-h-screen bg-brand-light font-sans">
+      <Header />
+      <main>
+        <Hero />
+        <Reviews />
+      </main>
+    </div>
+  );
 }
 
 export default App
