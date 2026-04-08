@@ -1,6 +1,8 @@
 import Header from './components/layout/Header';
 import Hero from './components/common/Hero';
 import Reviews from './components/common/Reviews';
+import Comparison from './components/common/Comparison';
+import MindmapFeature from './components/common/MindmapFeature';
 
 function App() {
   return (
@@ -9,6 +11,8 @@ function App() {
       <main>
         <Hero />
         <Reviews />
+        <Comparison />
+        <MindmapFeature />
       </main>
     </div>
   );
