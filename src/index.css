@@ -23,8 +23,14 @@
     50% { transform: translateY(-10px); }
   }
 
+  @keyframes marquee {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+
   --animate-fade-in-up: fade-in-up 0.6s ease-out;
   --animate-float: float 3s ease-in-out infinite;
+  --animate-marquee: marquee 35s linear infinite;
 }
 
 :root {

@@ -9,7 +9,7 @@ const Header = () => {
           PROMO CODE
         </span>
         <div className="bg-white px-8 py-1 rounded-sm shadow-inner min-w-[120px]">
-          {/* Placeholder for promo code input/text */}
+         12ABCXX
         </div>
       </div>
     </header>

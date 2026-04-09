@@ -3,6 +3,10 @@ import Hero from './components/common/Hero';
 import Reviews from './components/common/Reviews';
 import Comparison from './components/common/Comparison';
 import MindmapFeature from './components/common/MindmapFeature';
+import Recall from './components/common/Recall';
+import ScrollCards from './components/common/ScrollCards';
+import ScrollVideos from './components/common/ScrollVideos';
+import Footer from './components/layout/Footer';
 
 function App() {
   return (
@@ -13,7 +17,11 @@ function App() {
         <Reviews />
         <Comparison />
         <MindmapFeature />
+        <Recall/>
+        <ScrollCards />
+        <ScrollVideos />
       </main>
+      <Footer />
     </div>
   );
 }

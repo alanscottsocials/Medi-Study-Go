@@ -2,16 +2,16 @@ import React from 'react';
 import { Star } from 'lucide-react';
 
 const Reviews = () => {
-  // Assuming review1.jpg to review8.jpg exist in the public folder
-  const reviewImages = Array.from({ length: 8 }, (_, i) => `/review${i + 1}.jpg`);
+  // Assuming review1.webp to review8.webp exist in the public folder
+  const reviewImages = Array.from({ length: 8 }, (_, i) => `/review${i + 1}.webp`);
 
   return (
-    <section className="w-full bg-[#c3b6e8] py-[40px] md:py-[60px] overflow-hidden">
-      <div className="w-full px-[4%] md:px-[6%] mx-auto flex flex-col items-center text-center">
-        
+    <section className="w-full bg-brand-primary/5 py-[40px] md:py-[60px] overflow-hidden">
+      <div className="w-full px-[4%] md:px-[6%] mx-auto  flex flex-col items-center text-center">
+
         {/* Headings */}
-        <h2 className="text-2xl lg:text-5xl font-black text-brand-dark leading-tight mb-4">
-          Loved by <span className="text-[#facc15]">50000+</span> BDS students <br className="hidden md:block" />
+        <h2 className="text-3xl lg:text-5xl font-black text-brand-dark leading-tight mb-4">
+          Loved by <span className="text-[#facc15] drop-shadow-sm">50000+</span> BDS students <br className="hidden md:block" />
           across India
         </h2>
 
@@ -31,13 +31,13 @@ const Reviews = () => {
         {/* Image Grid using Columns (Masonry effect) */}
         <div className="w-full columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-6 space-y-6">
           {reviewImages.map((src, index) => (
-            <div 
-              key={index} 
+            <div
+              key={index}
               className="break-inside-avoid rounded-[2rem] overflow-hidden shadow-lg hover:shadow-xl hover:-translate-y-2 transition-all duration-300 relative group bg-brand-light"
             >
-              <img 
-                src={src} 
-                alt={`Student Review ${index + 1}`} 
+              <img
+                src={src}
+                alt={`Student Review ${index + 1}`}
                 className="w-full h-auto object-cover"
                 loading="lazy"
               />
@@ -45,7 +45,7 @@ const Reviews = () => {
             </div>
           ))}
         </div>
-        
+
       </div>
     </section>
   );
