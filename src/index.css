@@ -42,3 +42,8 @@ body {
   @apply font-sans;
   margin: 0;
 }
+
+button,
+input {
+  font: inherit;
+}
