@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { X } from 'lucide-react';
 
 const CLOUDINARY_CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
@@ -14,11 +14,124 @@ const encodePublicId = (publicId) =>
     .map((segment) => encodeURIComponent(segment))
     .join('/');
 
-const buildCloudinaryVideoUrl = ({ public_id: publicId, format, version, resource_type: resourceType }) => {
+const buildCloudinaryUrl = ({ resourceType = 'video', transformation = '', publicId, extension = '' }) => {
   const encodedPublicId = encodePublicId(publicId);
-  const versionPath = version ? `v${version}/` : '';
+  const transformationPath = transformation ? `${transformation}/` : '';
+  const extensionSuffix = extension ? `.${extension}` : '';
 
-  return `https://res.cloudinary.com/${CLOUDINARY_CLOUD_NAME}/${resourceType || 'video'}/upload/${versionPath}${encodedPublicId}.${format || 'mp4'}`;
+  return `https://res.cloudinary.com/${CLOUDINARY_CLOUD_NAME}/${resourceType}/upload/${transformationPath}${encodedPublicId}${extensionSuffix}`;
+};
+
+const buildCloudinaryVideoUrl = ({ public_id: publicId }) => {
+  return buildCloudinaryUrl({
+    resourceType: 'video',
+    publicId,
+    transformation: 'q_auto:good,vc_auto',
+  });
+};
+
+const buildCloudinaryPosterUrl = ({ public_id: publicId }) => {
+  return buildCloudinaryUrl({
+    resourceType: 'video',
+    publicId,
+    transformation: 'so_1/c_fill,g_auto,w_560,h_996/q_auto:good',
+    extension: 'jpg',
+  });
+};
+
+const buildCloudinaryPreviewUrl = ({ public_id: publicId }) => {
+  return buildCloudinaryUrl({
+    resourceType: 'video',
+    publicId,
+    transformation: 'so_0,du_6/c_fill,g_auto,w_420,h_748/q_auto:low,vc_auto',
+    extension: 'mp4',
+  });
+};
+
+const VideoCard = ({ video, onOpen }) => {
+  const [showPreview, setShowPreview] = useState(false);
+  const [posterError, setPosterError] = useState(false);
+  const [previewRetryKey, setPreviewRetryKey] = useState(0);
+  const videoRef = useRef(null);
+
+  useEffect(() => {
+    if (!showPreview && videoRef.current) {
+      videoRef.current.pause();
+      videoRef.current.currentTime = 0;
+    }
+  }, [showPreview]);
+
+  useEffect(() => {
+    return () => {
+      if (videoRef.current) {
+        videoRef.current.pause();
+      }
+    };
+  }, []);
+
+  const startPreview = () => {
+    setShowPreview(true);
+  };
+
+  const stopPreview = () => {
+    setShowPreview(false);
+  };
+
+  return (
+    <button
+      type="button"
+      className="flex-shrink-0 w-[200px] h-[355px] md:w-[280px] md:h-[498px] rounded-2xl overflow-hidden shadow-lg cursor-pointer transform transition duration-300 hover:scale-[1.03] hover:shadow-2xl hover:z-10 bg-brand-dark/20 border-2 border-brand-dark text-left"
+      onMouseEnter={startPreview}
+      onMouseLeave={stopPreview}
+      onFocus={startPreview}
+      onBlur={stopPreview}
+      onClick={() => onOpen(video)}
+      aria-label="Open student video"
+    >
+      <div className="relative w-full h-full bg-brand-dark/10">
+        {showPreview ? (
+          <video
+            key={previewRetryKey}
+            ref={videoRef}
+            src={video.previewSrc}
+            className="w-full h-full object-cover"
+            muted
+            loop
+            playsInline
+            preload="none"
+            autoPlay
+            poster={video.posterSrc}
+            onError={() => {
+              setShowPreview(false);
+              window.setTimeout(() => {
+                setPreviewRetryKey((currentKey) => currentKey + 1);
+              }, 1200);
+            }}
+          />
+        ) : posterError ? (
+          <div className="w-full h-full flex items-center justify-center bg-brand-dark text-white font-black tracking-wide text-center px-4">
+            STUDENT STORY
+          </div>
+        ) : (
+          <img
+            src={video.posterSrc}
+            alt="Student video thumbnail"
+            className="w-full h-full object-cover"
+            loading="lazy"
+            decoding="async"
+            onError={() => setPosterError(true)}
+          />
+        )}
+
+        <div className="absolute inset-0 bg-gradient-to-t from-brand-dark/35 via-transparent to-transparent pointer-events-none" />
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div className="w-14 h-14 rounded-full bg-white/90 flex items-center justify-center shadow-lg">
+            <div className="ml-1 border-y-[10px] border-y-transparent border-l-[16px] border-l-brand-dark" />
+          </div>
+        </div>
+      </div>
+    </button>
+  );
 };
 
 const ScrollVideos = () => {
@@ -62,9 +175,11 @@ const ScrollVideos = () => {
           .map((resource) => ({
             id: resource.asset_id || resource.public_id,
             publicId: resource.public_id,
-            src: buildCloudinaryVideoUrl(resource),
+            posterSrc: buildCloudinaryPosterUrl(resource),
+            previewSrc: buildCloudinaryPreviewUrl(resource),
+            fullSrc: buildCloudinaryVideoUrl(resource),
           }))
-          .filter((resource) => Boolean(resource.publicId && resource.src));
+          .filter((resource) => Boolean(resource.publicId && resource.posterSrc && resource.previewSrc && resource.fullSrc));
 
         if (!isCancelled) {
           setVideos(nextVideos);
@@ -123,31 +238,11 @@ const ScrollVideos = () => {
         {!isLoading && !loadError && videos.length > 0 ? (
           <div className="flex w-max animate-marquee hover:[animation-play-state:paused] gap-4 md:gap-8 px-4" style={{ animationDuration: '120s' }}>
             {marqueeVideos.map((video, index) => (
-              <div
+              <VideoCard
                 key={`${video.id}-${index}`}
-                className="flex-shrink-0 w-[200px] h-[355px] md:w-[280px] md:h-[498px] rounded-2xl overflow-hidden shadow-lg cursor-pointer transform transition duration-300 hover:scale-[1.03] hover:shadow-2xl hover:z-10 bg-brand-dark/20 border-2 border-brand-dark"
-                onClick={() => setSelectedVideo(video.src)}
-              >
-                <video
-                  src={video.src}
-                  className="w-full h-full object-cover"
-                  muted
-                  loop
-                  playsInline
-                  preload="metadata"
-                  onMouseEnter={(e) => {
-                    e.target.muted = false;
-                    e.target.play().catch(() => {
-                      e.target.muted = true;
-                      e.target.play();
-                    });
-                  }}
-                  onMouseLeave={(e) => {
-                    e.target.muted = true;
-                    e.target.pause();
-                  }}
-                />
-              </div>
+                video={video}
+                onOpen={setSelectedVideo}
+              />
             ))}
           </div>
         ) : null}
@@ -173,12 +268,14 @@ const ScrollVideos = () => {
             </button>
 
             <video
-              src={selectedVideo}
+              src={selectedVideo.fullSrc}
               className="w-full h-full object-contain rounded-xl shadow-2xl bg-black"
+              poster={selectedVideo.posterSrc}
               onClick={(e) => e.stopPropagation()}
               controls
               autoPlay
               playsInline
+              preload="metadata"
             />
           </div>
         </div>
