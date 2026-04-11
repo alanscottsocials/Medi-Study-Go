@@ -4,35 +4,6 @@ import { X } from 'lucide-react';
 const ScrollVideos = () => {
   const [selectedVideo, setSelectedVideo] = useState(null);
 
-  const videoFiles = [
-    "Dr Sanigdha.mov",
-    "Dr.Akanksha Umale, Flashcards_.mp4",
-    "Keasa Fatma(DENTISTRY is Pintrestry).mp4",
-    "Nandini Yadav.mp4",
-    "Nupur Sahane  Oral Radiology_.mp4",
-    "Oral Surgery (Dr.Syed Princy testimonial).mp4",
-    "PRITHVI.mp4",
-    "Parul Raikwar.mp4",
-    "Parul Yadav.mp4",
-    "Rashi Rajput app review_.mp4",
-    "Sulagna Chakraborty.mp4",
-    "TIYA.mp4",
-    "Tanisha.mp4",
-    "Tanishka_.mp4",
-    "The Joshi Daughter. Sunidhi Joshi_.mp4",
-    "akansha.mp4",
-    "ananyah shrivastav app review .MOV",
-    "ayush.mp4",
-    "kalpesh.mp4",
-    "manshisharma(central.incisor_).mp4",
-    "muskaan MCODS.mp4",
-    "sanchita.mp4",
-    "shital.mp4",
-    "taru.mp4"
-  ];
-
-  // Encode URLs properly and prefix with the public path
-  const videos = videoFiles.map(file => `/video/testimonial/${encodeURIComponent(file)}`);
 
   // Duplicate array once to allow a seamless CSS marquee
   const marqueeVideos = [...videos, ...videos];
