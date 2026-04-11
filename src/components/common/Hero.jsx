@@ -1,6 +1,6 @@
 import React from 'react';
 
-const Hero = () => {
+const Hero = ({ onShopNowClick }) => {
   return (
     <section className="w-full bg-brand-light py-[40px] md:py-[60px] overflow-hidden">
       <div className="w-full px-[4%] md:px-[6%] mx-auto  grid grid-cols-1 lg:grid-cols-[3fr_7fr] gap-12 items-center">
@@ -59,7 +59,11 @@ const Hero = () => {
               ))}
             </ul>
 
-            <button className="bg-brand-dark text-white px-10 py-2 rounded-xl text-lg lg:text-xl font-black tracking-widest uppercase hover:bg-brand-dark/90 hover:scale-105 active:scale-95 transition-all shadow-lg hover:shadow-brand-dark/30">
+            <button
+              type="button"
+              onClick={onShopNowClick}
+              className="bg-brand-dark text-white px-10 py-2 rounded-xl text-lg lg:text-xl font-black tracking-widest uppercase hover:bg-brand-dark/90 hover:scale-105 active:scale-95 transition-all shadow-lg hover:shadow-brand-dark/30"
+            >
               SHOP NOW
             </button>
 

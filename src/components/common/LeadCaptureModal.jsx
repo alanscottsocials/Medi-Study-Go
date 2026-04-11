@@ -30,8 +30,7 @@ function readUtmValues() {
   return stored
 }
 
-function LeadCaptureModal() {
-  const [isOpen, setIsOpen] = useState(false)
+function LeadCaptureModal({ isOpen, onOpenChange }) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isSubmitted, setIsSubmitted] = useState(false)
   const [error, setError] = useState('')
@@ -46,7 +45,7 @@ function LeadCaptureModal() {
     const timers = [10000, 20000, 30000].map((delay) =>
       window.setTimeout(() => {
         if (!isOpenRef.current && !isSubmittedRef.current) {
-          setIsOpen(true)
+          onOpenChange(true)
         }
       }, delay),
     )
@@ -71,7 +70,7 @@ function LeadCaptureModal() {
 
     const onKeyDown = (event) => {
       if (event.key === 'Escape') {
-        setIsOpen(false)
+        onOpenChange(false)
       }
     }
 
@@ -113,7 +112,7 @@ function LeadCaptureModal() {
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-brand-dark/60 px-4 py-6 backdrop-blur-sm"
-      onClick={() => setIsOpen(false)}
+      onClick={() => onOpenChange(false)}
     >
       <div
         className="relative w-full max-w-[530px] rounded-[28px] bg-[#d6b8ff] px-5 pb-10 pt-7 text-center text-black shadow-[0_30px_80px_rgba(35,12,68,0.35)] sm:px-10"
@@ -123,13 +122,13 @@ function LeadCaptureModal() {
           type="button"
           aria-label="Close popup"
           className="absolute right-5 top-5 cursor-pointer text-black/65 transition hover:text-black"
-          onClick={() => setIsOpen(false)}
+          onClick={() => onOpenChange(false)}
         >
           <X size={30} strokeWidth={2.2} />
         </button>
 
         <div className="mx-auto max-w-[400px]">
-          <h2 className="mt-8 text-4xl font-extrabold leading-tight tracking-[-0.03em] sm:text-[3rem]">
+          <h2 className="mt-8 text-2xl lg:text-5xl font-black text-brand-dark leading-tight tracking-[-0.03em] sm:text-[3rem]">
             Get a 10% off on all our products!
           </h2>
           <p className="mt-4 text-lg leading-7 text-black/80">
@@ -145,7 +144,7 @@ function LeadCaptureModal() {
               <button
                 type="button"
                 className="mt-6 w-full rounded-2xl bg-black px-6 py-4 text-lg font-semibold text-white transition hover:bg-black/90"
-                onClick={() => setIsOpen(false)}
+                onClick={() => onOpenChange(false)}
               >
                 Close
               </button>
