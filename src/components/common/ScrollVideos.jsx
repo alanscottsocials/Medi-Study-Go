@@ -1,12 +1,94 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { X } from 'lucide-react';
+
+const CLOUDINARY_CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
+const CLOUDINARY_VIDEO_TAG = import.meta.env.VITE_CLOUDINARY_VIDEO_TAG;
+const CLOUDINARY_LIST_URL =
+  CLOUDINARY_CLOUD_NAME && CLOUDINARY_VIDEO_TAG
+    ? `https://res.cloudinary.com/${CLOUDINARY_CLOUD_NAME}/video/list/${encodeURIComponent(CLOUDINARY_VIDEO_TAG)}.json`
+    : null;
+
+const encodePublicId = (publicId) =>
+  publicId
+    .split('/')
+    .map((segment) => encodeURIComponent(segment))
+    .join('/');
+
+const buildCloudinaryVideoUrl = ({ public_id: publicId, format, version, resource_type: resourceType }) => {
+  const encodedPublicId = encodePublicId(publicId);
+  const versionPath = version ? `v${version}/` : '';
+
+  return `https://res.cloudinary.com/${CLOUDINARY_CLOUD_NAME}/${resourceType || 'video'}/upload/${versionPath}${encodedPublicId}.${format || 'mp4'}`;
+};
 
 const ScrollVideos = () => {
   const [selectedVideo, setSelectedVideo] = useState(null);
+  const [videos, setVideos] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
 
+  useEffect(() => {
+    let isCancelled = false;
 
-  // Duplicate array once to allow a seamless CSS marquee
-  const marqueeVideos = [...videos, ...videos];
+    const loadVideos = async () => {
+      if (!CLOUDINARY_LIST_URL) {
+        if (!isCancelled) {
+          setVideos([]);
+          setLoadError('Cloudinary video settings are missing.');
+          setIsLoading(false);
+        }
+        return;
+      }
+
+      try {
+        setIsLoading(true);
+        setLoadError('');
+
+        const response = await fetch(CLOUDINARY_LIST_URL, {
+          headers: {
+            Accept: 'application/json',
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to load videos (${response.status})`);
+        }
+
+        const data = await response.json();
+        const resources = Array.isArray(data?.resources) ? data.resources : [];
+
+        const nextVideos = resources
+          .filter((resource) => (resource.resource_type || 'video') === 'video')
+          .map((resource) => ({
+            id: resource.asset_id || resource.public_id,
+            publicId: resource.public_id,
+            src: buildCloudinaryVideoUrl(resource),
+          }))
+          .filter((resource) => Boolean(resource.publicId && resource.src));
+
+        if (!isCancelled) {
+          setVideos(nextVideos);
+        }
+      } catch (error) {
+        if (!isCancelled) {
+          setVideos([]);
+          setLoadError(error instanceof Error ? error.message : 'Unable to load videos right now.');
+        }
+      } finally {
+        if (!isCancelled) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    loadVideos();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, []);
+
+  const marqueeVideos = useMemo(() => [...videos, ...videos], [videos]);
 
   return (
     <section className="w-full bg-brand-primary/5 py-[40px] md:py-[60px] overflow-hidden">
@@ -20,38 +102,55 @@ const ScrollVideos = () => {
 
       {/* Marquee Track Container */}
       <div className="w-full overflow-hidden relative flex items-center">
+        {isLoading ? (
+          <div className="w-full px-[4%] md:px-[6%] text-center text-brand-dark/70 font-semibold">
+            Loading student videos...
+          </div>
+        ) : null}
 
-        {/* We need a much longer animation duration for 48 videos (24x2) */}
-        <div className="flex w-max animate-marquee hover:[animation-play-state:paused] gap-4 md:gap-8 px-4" style={{ animationDuration: '120s' }}>
-          {marqueeVideos.map((src, index) => (
-            <div
-              key={index}
-              className="flex-shrink-0 w-[200px] h-[355px] md:w-[280px] md:h-[498px] rounded-2xl overflow-hidden shadow-lg cursor-pointer transform transition duration-300 hover:scale-[1.03] hover:shadow-2xl hover:z-10 bg-brand-dark/20 border-2 border-brand-dark"
-              onClick={() => setSelectedVideo(src)}
-            >
-              <video
-                src={src}
-                className="w-full h-full object-cover"
-                muted
-                loop
-                playsInline
-                preload="metadata"
-                onMouseEnter={(e) => {
-                  e.target.muted = false;
-                  e.target.play().catch(() => {
-                    // Browser might block unmuted autoplay if no prior interaction
+        {!isLoading && loadError ? (
+          <div className="w-full px-[4%] md:px-[6%] text-center text-brand-dark/70 font-semibold">
+            {loadError}
+          </div>
+        ) : null}
+
+        {!isLoading && !loadError && videos.length === 0 ? (
+          <div className="w-full px-[4%] md:px-[6%] text-center text-brand-dark/70 font-semibold">
+            No student videos found for this Cloudinary tag yet.
+          </div>
+        ) : null}
+
+        {!isLoading && !loadError && videos.length > 0 ? (
+          <div className="flex w-max animate-marquee hover:[animation-play-state:paused] gap-4 md:gap-8 px-4" style={{ animationDuration: '120s' }}>
+            {marqueeVideos.map((video, index) => (
+              <div
+                key={`${video.id}-${index}`}
+                className="flex-shrink-0 w-[200px] h-[355px] md:w-[280px] md:h-[498px] rounded-2xl overflow-hidden shadow-lg cursor-pointer transform transition duration-300 hover:scale-[1.03] hover:shadow-2xl hover:z-10 bg-brand-dark/20 border-2 border-brand-dark"
+                onClick={() => setSelectedVideo(video.src)}
+              >
+                <video
+                  src={video.src}
+                  className="w-full h-full object-cover"
+                  muted
+                  loop
+                  playsInline
+                  preload="metadata"
+                  onMouseEnter={(e) => {
+                    e.target.muted = false;
+                    e.target.play().catch(() => {
+                      e.target.muted = true;
+                      e.target.play();
+                    });
+                  }}
+                  onMouseLeave={(e) => {
                     e.target.muted = true;
-                    e.target.play();
-                  });
-                }}
-                onMouseLeave={(e) => {
-                  e.target.muted = true;
-                  e.target.pause();
-                }}
-              />
-            </div>
-          ))}
-        </div>
+                    e.target.pause();
+                  }}
+                />
+              </div>
+            ))}
+          </div>
+        ) : null}
 
       </div>
 
