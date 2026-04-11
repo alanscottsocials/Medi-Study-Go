@@ -4,7 +4,7 @@ const Header = () => {
   return (
     <header className="w-full">
       {/* Promo Bar */}
-      <div className="w-full bg-brand-primary py-2 px-4 flex justify-center items-center gap-4">
+      <div className="w-full bg-[#a77df2] py-2 px-4 flex justify-center items-center gap-4">
         <span className="text-brand-dark font-bold text-sm tracking-wider uppercase">
           PROMO CODE
         </span>

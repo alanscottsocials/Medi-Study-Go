@@ -30,7 +30,7 @@ function readUtmValues() {
   return stored
 }
 
-function LeadCaptureModal({ isOpen, onOpenChange }) {
+function LeadCaptureModal({ isOpen, onOpenChange, onSuccess }) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isSubmitted, setIsSubmitted] = useState(false)
   const [error, setError] = useState('')
@@ -98,6 +98,10 @@ function LeadCaptureModal({ isOpen, onOpenChange }) {
       await submitLead(formData, utmData)
       setIsSubmitted(true)
       setFormData(initialForm)
+      if (onSuccess) {
+        onOpenChange(false)
+        onSuccess()
+      }
     } catch (submissionError) {
       setError(submissionError.message || 'Something went wrong. Please try again.')
     } finally {

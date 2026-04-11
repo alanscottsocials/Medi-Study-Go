@@ -8,20 +8,34 @@ import Recall from './components/common/Recall';
 import ScrollCards from './components/common/ScrollCards';
 import ScrollVideos from './components/common/ScrollVideos';
 import LeadCaptureModal from './components/common/LeadCaptureModal';
+import ShopOfferModal from './components/common/ShopOfferModal';
 import Footer from './components/layout/Footer';
 
 function App() {
   const [isLeadModalOpen, setIsLeadModalOpen] = useState(false);
+  const [isShopOfferModalOpen, setIsShopOfferModalOpen] = useState(false);
 
   return (
     <div className="min-h-screen bg-brand-light font-sans">
       <LeadCaptureModal
         isOpen={isLeadModalOpen}
         onOpenChange={setIsLeadModalOpen}
+        onSuccess={() => setIsShopOfferModalOpen(true)}
+      />
+      <ShopOfferModal
+        isOpen={isShopOfferModalOpen}
+        onOpenChange={setIsShopOfferModalOpen}
+        onClaimOffer={() => {
+          setIsShopOfferModalOpen(false);
+          setIsLeadModalOpen(true);
+        }}
       />
       <Header />
       <main>
-        <Hero onShopNowClick={() => setIsLeadModalOpen(true)} />
+        <Hero
+          onDiscountClick={() => setIsLeadModalOpen(true)}
+          onShopNowClick={() => setIsShopOfferModalOpen(true)}
+        />
         <Reviews />
         <Comparison />
         <MindmapFeature />
