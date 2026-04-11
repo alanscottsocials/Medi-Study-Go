@@ -52,6 +52,8 @@ const VideoCard = ({ video, onOpen }) => {
   const [showPreview, setShowPreview] = useState(false);
   const [posterError, setPosterError] = useState(false);
   const [previewRetryKey, setPreviewRetryKey] = useState(0);
+  const [isHovered, setIsHovered] = useState(false);
+  const [pointerPosition, setPointerPosition] = useState({ x: 0, y: 0 });
   const videoRef = useRef(null);
 
   useEffect(() => {
@@ -70,11 +72,22 @@ const VideoCard = ({ video, onOpen }) => {
   }, []);
 
   const startPreview = () => {
+    setIsHovered(true);
     setShowPreview(true);
   };
 
   const stopPreview = () => {
+    setIsHovered(false);
     setShowPreview(false);
+  };
+
+  const handlePointerMove = (event) => {
+    const bounds = event.currentTarget.getBoundingClientRect();
+
+    setPointerPosition({
+      x: event.clientX - bounds.left,
+      y: event.clientY - bounds.top,
+    });
   };
 
   return (
@@ -83,6 +96,7 @@ const VideoCard = ({ video, onOpen }) => {
       className="flex-shrink-0 w-[200px] h-[355px] md:w-[280px] md:h-[498px] rounded-2xl overflow-hidden shadow-lg cursor-pointer transform transition duration-300 hover:scale-[1.03] hover:shadow-2xl hover:z-10 bg-brand-dark/20 border-2 border-brand-dark text-left"
       onMouseEnter={startPreview}
       onMouseLeave={stopPreview}
+      onMouseMove={handlePointerMove}
       onFocus={startPreview}
       onBlur={stopPreview}
       onClick={() => onOpen(video)}
@@ -95,12 +109,20 @@ const VideoCard = ({ video, onOpen }) => {
             ref={videoRef}
             src={video.previewSrc}
             className="w-full h-full object-cover"
-            muted
+            muted={false}
             loop
             playsInline
             preload="none"
             autoPlay
             poster={video.posterSrc}
+            onLoadedMetadata={(event) => {
+              event.currentTarget.muted = false;
+              event.currentTarget.volume = 1;
+              event.currentTarget.play().catch(() => {
+                event.currentTarget.muted = true;
+                event.currentTarget.play().catch(() => {});
+              });
+            }}
             onError={() => {
               setShowPreview(false);
               window.setTimeout(() => {
@@ -125,10 +147,26 @@ const VideoCard = ({ video, onOpen }) => {
 
         <div className="absolute inset-0 bg-gradient-to-t from-brand-dark/35 via-transparent to-transparent pointer-events-none" />
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="w-14 h-14 rounded-full bg-white/90 flex items-center justify-center shadow-lg">
-            <div className="ml-1 border-y-[10px] border-y-transparent border-l-[16px] border-l-brand-dark" />
+          <div className="flex items-center gap-3">
+            <div className="w-14 h-14 rounded-full bg-white/90 flex items-center justify-center shadow-lg">
+              <div className="ml-1 border-y-[10px] border-y-transparent border-l-[16px] border-l-brand-dark" />
+            </div>
           </div>
         </div>
+        {isHovered && !showPreview ? (
+          <div
+            className="absolute pointer-events-none z-10"
+            style={{
+              left: `${pointerPosition.x + 20}px`,
+              top: `${pointerPosition.y}px`,
+              transform: 'translateY(-50%)',
+            }}
+          >
+            <div className="rounded-full bg-white/90 px-4 py-2 text-xs md:text-sm font-black uppercase tracking-wide text-brand-dark shadow-lg whitespace-nowrap">
+              Click Here
+            </div>
+          </div>
+        ) : null}
       </div>
     </button>
   );

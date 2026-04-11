@@ -129,7 +129,7 @@ function LeadCaptureModal({ isOpen, onOpenChange }) {
 
         <div className="mx-auto max-w-[400px]">
           <h2 className="mt-8 text-2xl lg:text-5xl font-black text-brand-dark leading-tight tracking-[-0.03em] sm:text-[3rem]">
-            Get a 10% off on all our products!
+            Get a 20% off on all our products!
           </h2>
           <p className="mt-4 text-lg leading-7 text-black/80">
             You will get a code after entering your details
