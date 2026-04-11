@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Header from './components/layout/Header';
 import Hero from './components/common/Hero';
 import Reviews from './components/common/Reviews';
@@ -10,10 +10,15 @@ import ScrollVideos from './components/common/ScrollVideos';
 import LeadCaptureModal from './components/common/LeadCaptureModal';
 import ShopOfferModal from './components/common/ShopOfferModal';
 import Footer from './components/layout/Footer';
+import { submitPaymentSuccessFromUrl } from './services/submissions';
 
 function App() {
   const [isLeadModalOpen, setIsLeadModalOpen] = useState(false);
   const [isShopOfferModalOpen, setIsShopOfferModalOpen] = useState(false);
+
+  useEffect(() => {
+    submitPaymentSuccessFromUrl().catch(() => {})
+  }, []);
 
   return (
     <div className="min-h-screen bg-brand-light font-sans">
@@ -27,7 +32,6 @@ function App() {
         onOpenChange={setIsShopOfferModalOpen}
         onClaimOffer={() => {
           setIsShopOfferModalOpen(false);
-          setIsLeadModalOpen(true);
         }}
       />
       <Header />

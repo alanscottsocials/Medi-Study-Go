@@ -1,33 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import { X, ChevronDown } from 'lucide-react'
-import { submitLead } from '../../services/leads'
+import { submitLead } from '../../services/submissions'
+import { readUtmValues } from '../../utils/utm'
 
 const initialForm = {
   firstName: '',
   email: '',
   phone: '',
   countryCode: '+91',
-}
-
-const utmKeys = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content']
-
-function readUtmValues() {
-  const stored = {}
-  const searchParams = new URLSearchParams(window.location.search)
-
-  utmKeys.forEach((key) => {
-    const urlValue = searchParams.get(key)
-
-    if (urlValue) {
-      localStorage.setItem(key, urlValue)
-      stored[key] = urlValue
-      return
-    }
-
-    stored[key] = localStorage.getItem(key) || ''
-  })
-
-  return stored
 }
 
 function LeadCaptureModal({ isOpen, onOpenChange, onSuccess }) {
