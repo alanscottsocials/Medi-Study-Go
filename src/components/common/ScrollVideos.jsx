@@ -254,7 +254,7 @@ const ScrollVideos = () => {
       </div>
 
       {/* Marquee Track Container */}
-      <div className="w-full overflow-hidden relative flex items-center">
+      <div className="w-full overflow-hidden relative flex items-center py-4">
         {isLoading ? (
           <div className="w-full px-[4%] md:px-[6%] text-center text-brand-dark/70 font-semibold">
             Loading student videos...
