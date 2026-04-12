@@ -1,13 +1,13 @@
 import { readUtmValues } from '../utils/utm'
 
 const googleLink = import.meta.env.GOOGLE_LINK
-const razorpayPaymentLink = import.meta.env.VITE_RAZORPAY_PAYMENT_LINK
+const paymentServerUrl =
+  (import.meta.env.VITE_PAYMENT_SERVER_URL || 'http://localhost:4000').replace(/\/$/, '')
 
 const OFFER_NAME = 'Final Year BDS Offer'
 const ORIGINAL_PRICE = '13000'
 const OFFER_PRICE = '9999'
 const buyerDetailsStorageKey = 'medistudygo_buyer_details'
-const paymentSuccessHandledKey = 'medistudygo_payment_success_handled'
 
 function getTimestamp() {
   return new Date().toISOString()
@@ -22,7 +22,7 @@ function normalizeBuyerDetails(formData = {}) {
   }
 }
 
-function buildOfferPayload(overrides = {}) {
+function getOfferPayload(overrides = {}) {
   return {
     offerName: OFFER_NAME,
     originalPrice: ORIGINAL_PRICE,
@@ -33,7 +33,7 @@ function buildOfferPayload(overrides = {}) {
   }
 }
 
-async function postSubmission(payload) {
+async function postLeadSubmission(payload) {
   if (!googleLink) {
     throw new Error('Missing GOOGLE_LINK in environment variables.')
   }
@@ -48,11 +48,29 @@ async function postSubmission(payload) {
   })
 }
 
-function persistBuyerDetails(formData) {
+async function postPaymentRequest(path, payload) {
+  const response = await fetch(`${paymentServerUrl}${path}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  })
+
+  const data = await response.json().catch(() => ({}))
+
+  if (!response.ok) {
+    throw new Error(data.error || 'Unable to connect to payment server.')
+  }
+
+  return data
+}
+
+export function persistBuyerDetails(formData) {
   localStorage.setItem(buyerDetailsStorageKey, JSON.stringify(normalizeBuyerDetails(formData)))
 }
 
-function getStoredBuyerDetails() {
+export function getStoredBuyerDetails() {
   try {
     const storedValue = localStorage.getItem(buyerDetailsStorageKey)
 
@@ -66,41 +84,11 @@ function getStoredBuyerDetails() {
   }
 }
 
-function getPaymentSuccessPayloadFromUrl() {
-  const searchParams = new URLSearchParams(window.location.search)
-  const paymentId =
-    searchParams.get('razorpay_payment_id') ||
-    searchParams.get('payment_id') ||
-    searchParams.get('razorpayPaymentId') ||
-    ''
-  const paymentStatus =
-    searchParams.get('payment_status') ||
-    searchParams.get('status') ||
-    searchParams.get('payment_link_status') ||
-    searchParams.get('razorpay_payment_link_status') ||
-    ''
-  const paidAt = searchParams.get('paid_at') || searchParams.get('payment_time') || ''
-
-  const hasSuccessSignal =
-    Boolean(paymentId) ||
-    ['captured', 'paid', 'success'].includes(paymentStatus.toLowerCase())
-
-  if (!hasSuccessSignal) {
-    return null
-  }
-
-  return {
-    paymentId,
-    paymentStatus: paymentStatus || 'paid',
-    paidAt: paidAt || getTimestamp(),
-  }
-}
-
 export async function submitLead(formData, utmData = readUtmValues()) {
   const buyerDetails = normalizeBuyerDetails(formData)
   persistBuyerDetails(buyerDetails)
 
-  await postSubmission({
+  await postLeadSubmission({
     ...buyerDetails,
     source: 'website-popup',
     submittedAt: getTimestamp(),
@@ -112,12 +100,7 @@ export async function submitLead(formData, utmData = readUtmValues()) {
   })
 }
 
-export async function submitPurchaseIntent(formData = {}) {
-  if (!razorpayPaymentLink) {
-    throw new Error('Missing VITE_RAZORPAY_PAYMENT_LINK in environment variables.')
-  }
-
-  const utmData = readUtmValues()
+export async function createPaymentOrder(formData = {}) {
   const incomingBuyerDetails = normalizeBuyerDetails(formData)
   const buyerDetails =
     incomingBuyerDetails.firstName || incomingBuyerDetails.email || incomingBuyerDetails.phone
@@ -126,76 +109,25 @@ export async function submitPurchaseIntent(formData = {}) {
 
   persistBuyerDetails(buyerDetails)
 
-  await postSubmission({
-    sheetType: 'buy',
-    eventType: 'intent',
-    timestamp: getTimestamp(),
-    ...buyerDetails,
-    ...buildOfferPayload({
-      paymentLink: razorpayPaymentLink,
-      submittedAt: getTimestamp(),
-    }),
-    utmSource: utmData.utm_source || '',
-    utmMedium: utmData.utm_medium || '',
-    utmCampaign: utmData.utm_campaign || '',
-    utmTerm: utmData.utm_term || '',
-    utmContent: utmData.utm_content || '',
+  const utmData = readUtmValues()
+
+  return postPaymentRequest('/api/payments/order', {
+    buyerDetails,
+    offer: getOfferPayload(),
+    utmData,
   })
-
-  const url = new URL(razorpayPaymentLink)
-
-  if (buyerDetails.firstName) {
-    url.searchParams.set('prefill[name]', buyerDetails.firstName)
-  }
-
-  if (buyerDetails.email) {
-    url.searchParams.set('prefill[email]', buyerDetails.email)
-  }
-
-  if (buyerDetails.phone) {
-    url.searchParams.set('prefill[contact]', buyerDetails.phone)
-  }
-
-  url.searchParams.set('notes[source]', 'shop-offer-modal')
-  url.searchParams.set('notes[offer_name]', OFFER_NAME)
-  url.searchParams.set('notes[offer_price]', OFFER_PRICE)
-
-  return url.toString()
 }
 
-export async function submitPaymentSuccessFromUrl() {
-  const paymentSuccess = getPaymentSuccessPayloadFromUrl()
+export async function verifyPayment(paymentResponse, formData = {}) {
+  const incomingBuyerDetails = normalizeBuyerDetails(formData)
+  const buyerDetails =
+    incomingBuyerDetails.firstName || incomingBuyerDetails.email || incomingBuyerDetails.phone
+      ? incomingBuyerDetails
+      : getStoredBuyerDetails()
 
-  if (!paymentSuccess) {
-    return false
-  }
-
-  if (localStorage.getItem(paymentSuccessHandledKey) === paymentSuccess.paymentId) {
-    return false
-  }
-
-  const utmData = readUtmValues()
-  const buyerDetails = getStoredBuyerDetails()
-
-  await postSubmission({
-    sheetType: 'buy',
-    eventType: 'success',
-    timestamp: getTimestamp(),
-    ...buyerDetails,
-    ...buildOfferPayload({
-      paymentLink: razorpayPaymentLink || '',
-      submittedAt: getTimestamp(),
-      paymentId: paymentSuccess.paymentId,
-      paymentStatus: paymentSuccess.paymentStatus,
-      paidAt: paymentSuccess.paidAt,
-    }),
-    utmSource: utmData.utm_source || '',
-    utmMedium: utmData.utm_medium || '',
-    utmCampaign: utmData.utm_campaign || '',
-    utmTerm: utmData.utm_term || '',
-    utmContent: utmData.utm_content || '',
+  return postPaymentRequest('/api/payments/verify', {
+    buyerDetails,
+    offer: getOfferPayload(),
+    payment: paymentResponse,
   })
-
-  localStorage.setItem(paymentSuccessHandledKey, paymentSuccess.paymentId)
-  return true
 }

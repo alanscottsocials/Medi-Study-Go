@@ -1,6 +1,21 @@
 import { useEffect, useState } from 'react'
 import { X } from 'lucide-react'
-import { submitPurchaseIntent } from '../../services/submissions'
+import { createPaymentOrder, getStoredBuyerDetails, verifyPayment } from '../../services/submissions'
+
+function loadRazorpayCheckout() {
+  if (window.Razorpay) {
+    return Promise.resolve(true)
+  }
+
+  return new Promise((resolve) => {
+    const script = document.createElement('script')
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js'
+    script.async = true
+    script.onload = () => resolve(true)
+    script.onerror = () => resolve(false)
+    document.body.appendChild(script)
+  })
+}
 
 function ShopOfferModal({ isOpen, onOpenChange, onClaimOffer }) {
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -34,10 +49,53 @@ function ShopOfferModal({ isOpen, onOpenChange, onClaimOffer }) {
     setError('')
 
     try {
-      const checkoutUrl = await submitPurchaseIntent()
-      onClaimOffer?.()
-      onOpenChange(false)
-      window.location.href = checkoutUrl
+      const scriptLoaded = await loadRazorpayCheckout()
+
+      if (!scriptLoaded) {
+        throw new Error('Unable to load Razorpay checkout. Please try again.')
+      }
+
+      const buyerDetails = getStoredBuyerDetails()
+      const orderData = await createPaymentOrder(buyerDetails)
+
+      const razorpay = new window.Razorpay({
+        key: orderData.keyId,
+        amount: orderData.amount,
+        currency: orderData.currency,
+        name: 'Medi Study Go',
+        description: orderData.offerName,
+        order_id: orderData.orderId,
+        prefill: {
+          name: buyerDetails.firstName,
+          email: buyerDetails.email,
+          contact: buyerDetails.phone,
+        },
+        notes: {
+          offer_name: orderData.offerName,
+          offer_price: orderData.offerPrice,
+        },
+        theme: {
+          color: '#2f1f65',
+        },
+        handler: async (response) => {
+          try {
+            await verifyPayment(response, buyerDetails)
+            onClaimOffer?.()
+            onOpenChange(false)
+          } catch (verificationError) {
+            setError(verificationError.message || 'Payment completed, but verification failed.')
+          } finally {
+            setIsSubmitting(false)
+          }
+        },
+        modal: {
+          ondismiss: () => {
+            setIsSubmitting(false)
+          },
+        },
+      })
+
+      razorpay.open()
     } catch (submissionError) {
       setError(submissionError.message || 'Unable to start payment. Please try again.')
       setIsSubmitting(false)
@@ -108,7 +166,7 @@ function ShopOfferModal({ isOpen, onOpenChange, onClaimOffer }) {
             onClick={handlePayNow}
             className="mt-8 w-full rounded-xl bg-brand-dark px-6 py-3 text-lg font-black uppercase tracking-wide text-white transition hover:bg-brand-dark/90 disabled:cursor-not-allowed disabled:opacity-70"
           >
-            {isSubmitting ? 'Redirecting...' : 'Pay Rs9,999'}
+            {isSubmitting ? 'Opening Payment...' : 'Pay Rs9,999'}
           </button>
         </div>
       </div>
