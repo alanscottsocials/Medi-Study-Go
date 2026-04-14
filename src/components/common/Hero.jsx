@@ -9,7 +9,7 @@ const Hero = ({ onDiscountClick, onShopNowClick }) => {
           {/* Decorative elements could go here */}
           <div className="relative z-10 animate-float">
             <img
-              src="/girl.webp"
+              src="/girl.png"
               alt="Student with books"
               className="w-full max-w-lg mx-auto transform hover:scale-105 transition-transform duration-500"
             />
